@@ -7,18 +7,20 @@ from sklearn.datasets.samples_generator import make_blobs
 # returns two numpy arrays containing positive and negative samples
 def split_data_by_labels(X, y):
     m = X.shape[0]
+    feature_len = X.shape[1]
+
     positive_X = []
     negative_X = []
     for i in range(m):
         if y[i] <= 0:
-            negative_X.append([[X[i, 0], X[i, 1]]])
+            negative_X.append(X[i])
         else:
-            positive_X.append([[X[i, 0], X[i, 1]]])
+            positive_X.append(X[i])
 
     len_p = len(positive_X)
     len_n = len(negative_X)
-    positive_X = np.array(positive_X).reshape(len_p, 2)
-    negative_X = np.array(negative_X).reshape(len_n, 2)
+    positive_X = np.array(positive_X).reshape(len_p, feature_len)
+    negative_X = np.array(negative_X).reshape(len_n, feature_len)
 
     return positive_X, negative_X
 
@@ -60,9 +62,14 @@ def train(X, y, iterations=100, lambda_param=10):
 
     T = iterations
     theta_t = np.zeros(feature_len)
-    all_weights = []
+    weight_sum = np.zeros(feature_len)
     for t in range(1, T + 1):
         w_t = (1.0 / lambda_param) * step_size * theta_t
+
+        weight_sum = np.add(w_t, weight_sum)
+        current_weight = (1.0 / t) * weight_sum
+        print("Iteration number: " + str(t) + " Error: " + str(1 - test(X, y, current_weight)))
+
         i = np.random.choice(m)  # gets a uniformly random integer index between [0, m-1]
 
         y_i = y[i, 0]
@@ -70,13 +77,13 @@ def train(X, y, iterations=100, lambda_param=10):
 
         if y_i * np.dot(w_t, x_i) < 1:
             theta_t = theta_t + y_i * x_i
-
-        all_weights.append(w_t)
+        else:
+            # don't need to do anything
+            pass
 
         step_size = 0.1 * step_size
 
-    all_weights = np.array(all_weights)
-    w = (1.0 / T) * np.sum(all_weights, axis=0)
+    w = (1.0 / T) * np.array(weight_sum)
 
     return w
 
@@ -95,7 +102,7 @@ def test(X, y, w):
             mistakes += 1.0
 
     accuracy = 1 - (mistakes/test_sample_len)
-    print("Accuracy: " + str(accuracy * 100) + "%")
+    return accuracy
 
 
 def predict(w, x):
@@ -120,5 +127,9 @@ if __name__ == "__main__":
     test_x, test_y = X1[split_point:, :], y[split_point:, :]
 
     w = train(train_x, train_y)
-    test(test_x, test_y, w)
+    accuracy = test(test_x, test_y, w)
+
+    print("Validation Accuracy: " + str(accuracy * 100) + "%")
+    print("Whole accuracy: " + str(test(X1, y, w) * 100) + "%")
+
 
