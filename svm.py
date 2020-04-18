@@ -61,41 +61,47 @@ def plot(X, y):
 # because hard-svm is deterministic and we are asked to implement gradient descent
 # return weight_vector
 def train(X, y):
+    # TODO: remove this logic
+    indices_to_remove = set([i for i in range(X.shape[0])])
+
     m = X.shape[0]
     feature_len = X.shape[1]
 
     max_fval = get_max_f_value(X, y)
-    step_size = 0.1 * max_fval
+    step_size = 0.001 * max_fval
 
     # T = iterations
-    T = 3000
-    lambda_param = 1
+    T = 5000
+    lambda_param = 0.1
 
-    theta_t = np.zeros(feature_len)
+    w_t = np.zeros(feature_len)
     weight_sum = np.zeros(feature_len)
     for t in range(1, T + 1):
-        w_t = (1.0 / lambda_param) * step_size * theta_t
-
-        weight_sum = np.add(w_t, weight_sum)
-        current_weight = (1.0 / t) * weight_sum
-
-        if t % 100 == 0:
-            print("Iteration number: " + str(t) + " Error: " + str(1 - test(X, y, current_weight)))
-
         i = np.random.choice(m)  # gets a uniformly random integer index between [0, m-1]
 
         y_i = y[i, 0]
         x_i = X[i]
 
+        loss_differentiation = np.zeros(feature_len)
         if y_i * np.dot(w_t, x_i) < 1:
-            theta_t = theta_t + y_i * x_i
-        else:
-            # don't need to do anything
-            pass
+            loss_differentiation = np.add(lambda_param * (w_t), (-1 * y_i) * x_i)
 
-        step_size = 0.1 * step_size
+        w_t = w_t - step_size * loss_differentiation
 
-    w = (1.0 / T) * np.array(weight_sum)
+        if step_size * 0.1 >= 0.0001:
+            step_size = 0.1 * step_size
+
+        weight_sum = np.add(w_t, weight_sum)
+        if t % 10 == 0:
+            best_current_weight = (1.0/t) * weight_sum
+            error = 1 - test(X, y, w_t)
+            # print("Iteration number: " + str(t) + " Training error: " + str(error) + " Not removed: " + str(len(indices_to_remove)))
+
+        indices_to_remove.discard(i)
+
+
+    w = (1.0 / T) * weight_sum
+    # print("Indices not removed: " + str(len(indices_to_remove)))
 
     return w
 
@@ -123,28 +129,37 @@ def predict(w, x):
 def draw(X, y, hyper_plane):
     data_dict = split_data_by_labels(X, y)
 
-    positive_X = data_dict[-1]
-    negative_X = data_dict[1]
+    positive_X = data_dict[1]
+    negative_X = data_dict[-1]
 
     fig, ax = plt.subplots()
-    ax.scatter(positive_X[:, 1], positive_X[:, 2], c='r')
-    ax.scatter(negative_X[:, 1], negative_X[:, 2], c='b')
+    ax.scatter(positive_X[:, 1], positive_X[:, 2], c='g')
+    ax.scatter(negative_X[:, 1], negative_X[:, 2], c='r')
 
     ax.legend()
     ax.grid(True)
 
-    min_v = np.amin(X) - 1
-    max_v = np.amax(X) + 1
+    min_x, max_x = plt.xlim()
+    min_x = min_x - 1
+    max_x = max_x + 1
+    # Taking a set of points to use to plot a line across a grid
+    x_axis = np.linspace(min_x, max_x, 10000)
 
-    x_axis = np.linspace(min_v, max_v, int((max_v - min_v)/0.01))
+    # central hyperplane
     y_axis = (-hyper_plane[1]/hyper_plane[2]) * x_axis - hyper_plane[0]/hyper_plane[2]
+    ax.plot(x_axis, y_axis, '-b')
 
-    ax.plot(x_axis, y_axis, '-g')
+    # positive hyperplane
+    y_axis = (-hyper_plane[1] / hyper_plane[2]) * x_axis - hyper_plane[0] / hyper_plane[2] + (1.0/hyper_plane[2])
+    ax.plot(x_axis, y_axis, '--g')
 
+    # negative hyperplane
+    y_axis = (-hyper_plane[1] / hyper_plane[2]) * x_axis - hyper_plane[0] / hyper_plane[2] - (1.0/hyper_plane[2])
+    ax.plot(x_axis, y_axis, '--r')
 
     plt.show()
 
-if __name__ == "__main__":
+def main():
     X0, y = make_blobs(n_samples=100, n_features=2, centers=2,
                        cluster_std=1.05, random_state=10)
 
@@ -164,10 +179,29 @@ if __name__ == "__main__":
     data_dict = split_data_by_labels(train_x, train_y)
     w = train(train_x, train_y)
     print(str(w))
-    print("Norm: " + str(np.linalg.norm(w)))
+    # print("Norm: " + str(np.linalg.norm(w)))
     accuracy = test(test_x, test_y, w)
 
     print("Validation Accuracy: " + str(accuracy * 100) + "%")
-    print("Whole accuracy: " + str(test(X1, y, w) * 100) + "%")
+
+    whole_accuracy = test(X1, y, w)
+    print("Whole accuracy: " + str(whole_accuracy * 100) + "%")
 
     draw(X1, y, hyper_plane=w)
+
+    # TODO: REMOVE
+    return whole_accuracy
+
+
+if __name__ == "__main__":
+    found = False
+    for i in range(1):
+        acc = main()
+        if acc < 1.0:
+            found = True
+            break
+
+    if found:
+        print("Whole accuracy was less than 100.0")
+    else:
+        print("Keep it up!")
