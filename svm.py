@@ -71,8 +71,8 @@ def train(X, y):
     step_size = 0.001 * max_fval
 
     # T = iterations
-    T = 5000
-    lambda_param = 0.1
+    T = 45000
+    lambda_param = 0.01
 
     w_t = np.zeros(feature_len)
     weight_sum = np.zeros(feature_len)
@@ -83,8 +83,14 @@ def train(X, y):
         x_i = X[i]
 
         loss_differentiation = np.zeros(feature_len)
+        reg_differentiation = lambda_param * w_t
+
+        # setting bias regularization to 0
+        reg_differentiation[0] = 0
         if y_i * np.dot(w_t, x_i) < 1:
-            loss_differentiation = np.add(lambda_param * (w_t), (-1 * y_i) * x_i)
+            loss_differentiation = np.add(reg_differentiation, (-1 * y_i) * x_i)
+        else:
+            loss_differentiation = reg_differentiation
 
         w_t = w_t - step_size * loss_differentiation
 
