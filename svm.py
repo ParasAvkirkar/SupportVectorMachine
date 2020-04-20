@@ -71,12 +71,14 @@ def train(X, y):
     step_size = 0.001 * max_fval
 
     # T = iterations
-    T = 45000
+    T = 50000
     lambda_param = 0.01
 
     w_t = np.zeros(feature_len)
     weight_sum = np.zeros(feature_len)
     for t in range(1, T + 1):
+        # if len(indices_to_remove) == 0:
+        #     break
         i = np.random.choice(m)  # gets a uniformly random integer index between [0, m-1]
 
         y_i = y[i, 0]
@@ -94,6 +96,7 @@ def train(X, y):
 
         w_t = w_t - step_size * loss_differentiation
 
+        # keeping a limit on step_size of 0.0001
         if step_size * 0.1 >= 0.0001:
             step_size = 0.1 * step_size
 
