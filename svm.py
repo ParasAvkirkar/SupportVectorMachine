@@ -71,10 +71,10 @@ def train(X, y):
     step_size = 0.001 * max_fval
 
     # T = iterations
-    T = 50000
-    lambda_param = 0.01
+    T = 100000
+    lambda_param = 0.65
 
-    w_t = np.zeros(feature_len)
+    w_t = np.array([3.75,-0.5, 1.0])
     weight_sum = np.zeros(feature_len)
     for t in range(1, T + 1):
         # if len(indices_to_remove) == 0:
@@ -97,7 +97,7 @@ def train(X, y):
         w_t = w_t - step_size * loss_differentiation
 
         # keeping a limit on step_size of 0.0001
-        if step_size * 0.1 >= 0.0001:
+        if step_size * 0.1 >= 1:
             step_size = 0.1 * step_size
 
         weight_sum = np.add(w_t, weight_sum)
@@ -149,8 +149,8 @@ def draw(X, y, hyper_plane):
     ax.grid(True)
 
     min_x, max_x = plt.xlim()
-    min_x = min_x - 1
-    max_x = max_x + 1
+    min_x = min_x
+    max_x = max_x
     # Taking a set of points to use to plot a line across a grid
     x_axis = np.linspace(min_x, max_x, 10000)
 
@@ -167,6 +167,10 @@ def draw(X, y, hyper_plane):
     ax.plot(x_axis, y_axis, '--r')
 
     plt.show()
+
+def calculate_slope(hyperplane):
+    slope = -hyperplane[1]/hyperplane[2]
+    return slope
 
 def main():
     X0, y = make_blobs(n_samples=100, n_features=2, centers=2,
@@ -197,6 +201,7 @@ def main():
     print("Whole accuracy: " + str(whole_accuracy * 100) + "%")
 
     draw(X1, y, hyper_plane=w)
+    # draw(train_x, train_y, hyper_plane=w)
 
     # TODO: REMOVE
     return whole_accuracy
